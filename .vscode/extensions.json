@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "serayuzgur.crates",
+    "mikestead.dotenv",
+    "tamasfe.even-better-toml",
+    "matklad.rust-analyzer",
+    "editorconfig.editorconfig"
+  ]
+}

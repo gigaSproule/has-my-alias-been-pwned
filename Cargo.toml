@@ -1,0 +1,13 @@
+[package]
+name = "has-my-alias-been-pwned"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15.0"
+reqwest = { version = "0.11.9", features = [ "json" ] }
+serde = { version = "1.0.135", features = [ "derive" ] }
+tokio = { version = "1.15.0", features = [ "full" ] }
+
+[dev-dependencies]
+httpmock = "0.6"
