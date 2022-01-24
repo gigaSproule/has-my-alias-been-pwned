@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde::Deserialize;
 
-use crate::email_alias::{Alias, AliasService};
+use crate::email_alias::{Alias, AliasError, AliasService};
 
 #[derive(Deserialize, Debug)]
 pub struct Account {
@@ -88,16 +88,21 @@ impl<'a> AnonAddy<'a> {
 #[async_trait]
 impl<'a> AliasService for AnonAddy<'a> {
     async fn get_aliases(&self) -> Result<Vec<Box<dyn Alias>>, Box<dyn std::error::Error>> {
-        let aliases = self
+        println!("Getting aliases from AnonAddy.");
+        let response = self
             .client
             .get(format!("{}/api/v1/aliases", &(self.host)))
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", &(self.token)))
             .send()
-            .await?
-            .json::<AnonAddyResponse<AnonAddyAlias>>()
             .await?;
-        let boxed = aliases
+        if response.status() != 200 {
+            return Err(Box::new(AliasError::new(
+                "Failed to get aliases.".to_string(),
+            )));
+        }
+        let aliases = response.json::<AnonAddyResponse<AnonAddyAlias>>().await?;
+        let boxed: Vec<Box<dyn Alias>> = aliases
             .data
             .into_iter()
             .map(|alias| {
@@ -105,11 +110,25 @@ impl<'a> AliasService for AnonAddy<'a> {
                 boxed_alias
             })
             .collect();
+        println!("Retrieved {} aliases.", boxed.len());
         Ok(boxed)
     }
 
     async fn deactivate_alias(&self, id: String) -> Result<(), Box<dyn std::error::Error>> {
-        print!("Deactivating {}", id);
+        println!("Deactivating alias {}.", id);
+        let response = self
+            .client
+            .delete(format!("{}/api/v1/active-aliases/{}", &(self.host), id))
+            .header("Content-Type", "application/json")
+            .header("Authorization", format!("Bearer {}", &(self.token)))
+            .send()
+            .await?;
+        if response.status() != 204 {
+            return Err(Box::new(AliasError::new(format!(
+                "Failed to deactivate alias {}.",
+                id
+            ))));
+        }
         Ok(())
     }
 }
@@ -120,10 +139,150 @@ mod tests {
     use httpmock::prelude::*;
 
     #[tokio::test]
+    async fn get_aliases_returns_error_for_no_response() {
+        let client = reqwest::Client::new();
+        let anonaddy = AnonAddy {
+            client: &client,
+            token: "test-token".to_string(),
+            host: "https://localhost".to_string(),
+        };
+
+        let response = anonaddy.get_aliases().await;
+
+        assert!(response.is_err());
+        let error = response.unwrap_err();
+        let actual_error: &reqwest::Error = match error.downcast_ref::<reqwest::Error>() {
+            Some(error) => error,
+            None => panic!("Error returned was not an reqwest::Error!"),
+        };
+        assert!(actual_error.is_request());
+    }
+
+    #[tokio::test]
+    async fn get_aliases_returns_error_for_non_ok() {
+        let server = MockServer::start();
+        let aliases_mock = server.mock(|when, then| {
+            when.method(GET).path("/api/v1/aliases");
+            then.status(400).header("content-type", "application/json");
+        });
+
+        let client = reqwest::Client::new();
+        let anonaddy = AnonAddy {
+            client: &client,
+            token: "test-token".to_string(),
+            host: server.url(""),
+        };
+
+        let response = anonaddy.get_aliases().await;
+
+        assert!(response.is_err());
+        let error = response.unwrap_err();
+        let actual_error: &AliasError = match error.downcast_ref::<AliasError>() {
+            Some(error) => error,
+            None => panic!("Error returned was not an AliasError!"),
+        };
+        assert_eq!(actual_error.message, "Failed to get aliases.");
+
+        aliases_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn get_aliases_returns_error_for_no_body() {
+        let server = MockServer::start();
+        let aliases_mock = server.mock(|when, then| {
+            when.method(GET).path("/api/v1/aliases");
+            then.status(200).header("content-type", "application/json");
+        });
+
+        let client = reqwest::Client::new();
+        let anonaddy = AnonAddy {
+            client: &client,
+            token: "test-token".to_string(),
+            host: server.url(""),
+        };
+
+        let response = anonaddy.get_aliases().await;
+
+        assert!(response.is_err());
+        let error = response.unwrap_err();
+        let actual_error: &reqwest::Error = match error.downcast_ref::<reqwest::Error>() {
+            Some(error) => error,
+            None => panic!("Error returned was not an reqwest::Error!"),
+        };
+        assert!(actual_error.is_decode());
+
+        aliases_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn get_aliases_returns_inactive_alias() {
+        let server = MockServer::start();
+        let aliases_mock = server.mock(|when, then| {
+            let response = std::fs::read_to_string("resources/test/anonaddy_inactive_alias.json");
+            when.method(GET).path("/api/v1/aliases");
+            then.status(200)
+                .header("content-type", "application/json")
+                .body(response.unwrap());
+        });
+
+        let client = reqwest::Client::new();
+        let anonaddy = AnonAddy {
+            client: &client,
+            token: "test-token".to_string(),
+            host: server.url(""),
+        };
+
+        let response = anonaddy.get_aliases().await;
+
+        let aliases = response.unwrap();
+        assert_eq!(aliases.len(), 1);
+        let alias = aliases.get(0).unwrap();
+        assert_eq!(
+            alias.get_id(),
+            "50c9e585-e7f5-41c4-9016-9014c15454bc-inactive"
+        );
+        assert_eq!(alias.is_active(), false);
+
+        aliases_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn get_aliases_returns_active_alis() {
+        let server = MockServer::start();
+        let aliases_mock = server.mock(|when, then| {
+            let response = std::fs::read_to_string("resources/test/anonaddy_active_alias.json");
+            when.method(GET).path("/api/v1/aliases");
+            then.status(200)
+                .header("content-type", "application/json")
+                .body(response.unwrap());
+        });
+
+        let client = reqwest::Client::new();
+        let anonaddy = AnonAddy {
+            client: &client,
+            token: "test-token".to_string(),
+            host: server.url(""),
+        };
+
+        let response = anonaddy.get_aliases().await;
+
+        let aliases = response.unwrap();
+        assert_eq!(aliases.len(), 1);
+        let alias = aliases.get(0).unwrap();
+        assert_eq!(
+            alias.get_id(),
+            "50c9e585-e7f5-41c4-9016-9014c15454bc-active"
+        );
+        assert_eq!(alias.is_active(), true);
+
+        aliases_mock.assert();
+    }
+
+    #[tokio::test]
     async fn get_aliases_returns_multiple_aliases() {
         let server = MockServer::start();
         let aliases_mock = server.mock(|when, then| {
-            let response = std::fs::read_to_string("resources/test/anonaddy_aliases.json");
+            let response = std::fs::read_to_string("resources/test/anonaddy_multiple_aliases.json");
             when.method(GET).path("/api/v1/aliases");
             then.status(200)
                 .header("content-type", "application/json")
@@ -145,14 +304,36 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn deactivate_alias_returns_ok() {
+    async fn deactivate_alias_returns_error_for_no_response() {
+        let alias_id = "test-id";
+
+        let client = reqwest::Client::new();
+        let anonaddy = AnonAddy {
+            client: &client,
+            token: "test-token".to_string(),
+            host: "http://localhost".to_string(),
+        };
+
+        let response = anonaddy.deactivate_alias(alias_id.to_string()).await;
+
+        assert!(response.is_err());
+        let error = response.unwrap_err();
+        let actual_error: &reqwest::Error = match error.downcast_ref::<reqwest::Error>() {
+            Some(error) => error,
+            None => panic!("Error returned was not a reqwest::Error!"),
+        };
+        assert!(actual_error.is_request());
+    }
+
+    #[tokio::test]
+    async fn deactivate_alias_returns_error_if_status_200() {
         let server = MockServer::start();
+
+        let alias_id = "test-id";
         let aliases_mock = server.mock(|when, then| {
-            let response = std::fs::read_to_string("resources/test/anonaddy_aliases.json");
-            when.method(DELETE).path("/api/v1/aliases/");
-            then.status(200)
-                .header("content-type", "application/json")
-                .body(response.unwrap());
+            when.method(DELETE)
+                .path(format!("/api/v1/active-aliases/{}", &alias_id));
+            then.status(200).header("content-type", "application/json");
         });
 
         let client = reqwest::Client::new();
@@ -162,9 +343,43 @@ mod tests {
             host: server.url(""),
         };
 
-        let aliases = anonaddy.deactivate_alias("test-id".to_string()).await;
+        let response = anonaddy.deactivate_alias(alias_id.to_string()).await;
 
-        assert_eq!(aliases.unwrap(), ());
+        assert!(response.is_err());
+        let error = response.unwrap_err();
+        let actual_error: &AliasError = match error.downcast_ref::<AliasError>() {
+            Some(error) => error,
+            None => panic!("Error returned was not an AliasError!"),
+        };
+        assert_eq!(
+            actual_error.message,
+            format!("Failed to deactivate alias {}.", alias_id)
+        );
+
+        aliases_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn deactivate_alias_returns_ok() {
+        let server = MockServer::start();
+
+        let alias_id = "test-id";
+        let aliases_mock = server.mock(|when, then| {
+            when.method(DELETE)
+                .path(format!("/api/v1/active-aliases/{}", &alias_id));
+            then.status(204).header("content-type", "application/json");
+        });
+
+        let client = reqwest::Client::new();
+        let anonaddy = AnonAddy {
+            client: &client,
+            token: "test-token".to_string(),
+            host: server.url(""),
+        };
+
+        let response = anonaddy.deactivate_alias(alias_id.to_string()).await;
+
+        assert!(response.is_ok());
 
         aliases_mock.assert();
     }
