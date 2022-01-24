@@ -1,4 +1,7 @@
+use async_trait::async_trait;
 use serde::Deserialize;
+
+use crate::email_alias::{Alias, AliasService};
 
 #[derive(Deserialize, Debug)]
 pub struct Account {
@@ -31,7 +34,7 @@ pub struct Account {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct Alias {
+pub struct AnonAddyAlias {
     pub id: String,
     pub user_id: String,
     pub aliasable_id: Option<String>,
@@ -49,6 +52,16 @@ pub struct Alias {
     pub recipients: Vec<String>,
     pub created_at: String,
     pub updated_at: String,
+}
+
+impl Alias for AnonAddyAlias {
+    fn is_active(&self) -> bool {
+        self.active
+    }
+
+    fn get_id(&self) -> String {
+        self.id.clone()
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -70,8 +83,11 @@ impl<'a> AnonAddy<'a> {
             host: "https://app.anonaddy.com".to_string(),
         }
     }
+}
 
-    pub async fn get_aliases(&self) -> Result<AnonAddyResponse<Alias>, reqwest::Error> {
+#[async_trait]
+impl<'a> AliasService for AnonAddy<'a> {
+    async fn get_aliases(&self) -> Result<Vec<Box<dyn Alias>>, Box<dyn std::error::Error>> {
         let aliases = self
             .client
             .get(format!("{}/api/v1/aliases", &(self.host)))
@@ -79,9 +95,22 @@ impl<'a> AnonAddy<'a> {
             .header("Authorization", format!("Bearer {}", &(self.token)))
             .send()
             .await?
-            .json::<AnonAddyResponse<Alias>>()
+            .json::<AnonAddyResponse<AnonAddyAlias>>()
             .await?;
-        Ok(aliases)
+        let boxed = aliases
+            .data
+            .into_iter()
+            .map(|alias| {
+                let boxed_alias: Box<dyn Alias> = Box::new(alias);
+                boxed_alias
+            })
+            .collect();
+        Ok(boxed)
+    }
+
+    async fn deactivate_alias(&self, id: String) -> Result<(), Box<dyn std::error::Error>> {
+        print!("Deactivating {}", id);
+        Ok(())
     }
 }
 
@@ -102,15 +131,40 @@ mod tests {
         });
 
         let client = reqwest::Client::new();
-        let anonAddy = AnonAddy {
+        let anonaddy = AnonAddy {
             client: &client,
             token: "test-token".to_string(),
             host: server.url(""),
         };
 
-        let aliases = anonAddy.get_aliases().await;
+        let aliases = anonaddy.get_aliases().await;
 
-        assert_eq!(aliases.unwrap().data.len(), 2);
+        assert_eq!(aliases.unwrap().len(), 2);
+
+        aliases_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn deactivate_alias_returns_ok() {
+        let server = MockServer::start();
+        let aliases_mock = server.mock(|when, then| {
+            let response = std::fs::read_to_string("resources/test/anonaddy_aliases.json");
+            when.method(DELETE).path("/api/v1/aliases/");
+            then.status(200)
+                .header("content-type", "application/json")
+                .body(response.unwrap());
+        });
+
+        let client = reqwest::Client::new();
+        let anonaddy = AnonAddy {
+            client: &client,
+            token: "test-token".to_string(),
+            host: server.url(""),
+        };
+
+        let aliases = anonaddy.deactivate_alias("test-id".to_string()).await;
+
+        assert_eq!(aliases.unwrap(), ());
 
         aliases_mock.assert();
     }
