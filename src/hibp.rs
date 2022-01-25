@@ -28,7 +28,18 @@ pub struct HIBP<'a> {
 }
 
 impl<'a> HIBP<'a> {
-    pub fn new(client: &'a reqwest::Client, token: String) -> Self {
+    /// Creates a new instance to query against haveibeenpwned.com.
+    ///
+    /// For this to work, a `HIBP_TOKEN` environment variable must be set. If it is not set, this will panic.
+    ///
+    /// # Examples
+    /// ```
+    /// let client = reqwest::Client::new();
+    /// std::env::set_var("HIBP_TOKEN", "test-token");
+    /// let hibp = HIBP::new(&client);
+    /// ```
+    pub fn new(client: &'a reqwest::Client) -> Self {
+        let token = std::env::var("HIBP_TOKEN").expect("Please provide HIBP_TOKEN");
         HIBP {
             client,
             token,
@@ -81,6 +92,38 @@ impl std::error::Error for HIBPError {
 mod tests {
     use super::*;
     use httpmock::prelude::*;
+
+    #[tokio::test]
+    #[should_panic(expected = "Please provide HIBP_TOKEN: NotPresent")]
+    async fn new_throw_error_if_token_variable_not_set() {
+        let client = reqwest::Client::new();
+        std::env::remove_var("HIBP_TOKEN");
+        HIBP::new(&client);
+    }
+
+    #[tokio::test]
+    async fn new_return_instance_if_token_variable_empty() {
+        let client = reqwest::Client::new();
+        std::env::set_var("HIBP_TOKEN", "");
+
+        let hibp = HIBP::new(&client);
+
+        assert_eq!(hibp.client as *const _, &client as *const _);
+        assert_eq!(hibp.token, "");
+        assert_eq!(hibp.host, "https://haveibeenpwned.com".to_string());
+    }
+
+    #[tokio::test]
+    async fn new_return_instance_if_token_variable_has_value() {
+        let client = reqwest::Client::new();
+        std::env::set_var("HIBP_TOKEN", "test-token");
+
+        let hibp = HIBP::new(&client);
+
+        assert_eq!(hibp.client as *const _, &client as *const _);
+        assert_eq!(hibp.token, "test-token");
+        assert_eq!(hibp.host, "https://haveibeenpwned.com".to_string());
+    }
 
     #[tokio::test]
     async fn get_breaches_returns_error_for_no_response() {

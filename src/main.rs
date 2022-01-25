@@ -6,9 +6,7 @@ mod email_alias;
 mod hibp;
 
 fn get_alias_service(client: &reqwest::Client) -> Box<dyn AliasService + '_> {
-    let anonaddy_token_env = std::env::var("ANONADDY_TOKEN");
-    let anonaddy_token = anonaddy_token_env.expect("Please provide ANONADDY_TOKEN");
-    let anonaddy = anonaddy::AnonAddy::new(client, anonaddy_token);
+    let anonaddy = anonaddy::AnonAddy::new(client);
     Box::new(anonaddy)
 }
 
@@ -22,9 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let alias_service = get_alias_service(&client);
 
-    let hibp_token_env = std::env::var("HIBP_TOKEN");
-    let hibp_token = hibp_token_env.expect("Please provide HIBP_TOKEN");
-    let hibp = hibp::HIBP::new(&client, hibp_token);
+    let hibp = hibp::HIBP::new(&client);
 
     let aliases = alias_service.get_aliases().await?;
     for alias in aliases {

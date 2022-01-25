@@ -76,11 +76,32 @@ pub struct AnonAddy<'a> {
 }
 
 impl<'a> AnonAddy<'a> {
-    pub fn new(client: &'a reqwest::Client, token: String) -> Self {
+    /// Creates a new instance to query against an AnonAddy instance.
+    ///
+    /// For this to work, a `ANONADDY_TOKEN` environment variable must be set. If it is not set, this will panic.
+    /// By default, this will use `app.anonaddy.com`, but this can be overriden by setting the `ANONADDY_HOST` environment variable to the desired instance URL.
+    ///
+    /// # Examples
+    /// Only providing the token:
+    /// ```
+    /// let client = reqwest::Client::new();
+    /// std::env::set_var("ANONADDY_TOKEN", "test-token");
+    /// let anonaddy = ANONADDY_TOKEN::new(&client);
+    /// ```
+    /// Providing the token and the host:
+    /// ```
+    /// let client = reqwest::Client::new();
+    /// std::env::set_var("ANONADDY_TOKEN", "test-token");
+    /// std::env::set_var("ANONADDY_HOST", "https://my-anonaddy-instance.com");
+    /// let anonaddy = ANONADDY_TOKEN::new(&client);
+    /// ```
+    pub fn new(client: &'a reqwest::Client) -> Self {
+        let token = std::env::var("ANONADDY_TOKEN").expect("Please provide ANONADDY_TOKEN");
+        let host = std::env::var("ANONADDY_HOST").unwrap_or("https://app.anonaddy.com".to_string());
         AnonAddy {
             client,
             token,
-            host: "https://app.anonaddy.com".to_string(),
+            host,
         }
     }
 }
@@ -137,6 +158,57 @@ impl<'a> AliasService for AnonAddy<'a> {
 mod tests {
     use super::*;
     use httpmock::prelude::*;
+
+    #[tokio::test]
+    #[should_panic(expected = "Please provide ANONADDY_TOKEN: NotPresent")]
+    async fn new_throw_error_if_token_variable_not_set() {
+        let client = reqwest::Client::new();
+        std::env::remove_var("ANONADDY_TOKEN");
+        std::env::remove_var("ANONADDY_HOST");
+        AnonAddy::new(&client);
+    }
+
+    #[tokio::test]
+    async fn new_return_instance_if_token_variable_empty() {
+        let client = reqwest::Client::new();
+        std::env::set_var("ANONADDY_TOKEN", "");
+        std::env::remove_var("ANONADDY_HOST");
+
+        let anonaddy = AnonAddy::new(&client);
+
+        assert_eq!(anonaddy.client as *const _, &client as *const _);
+        assert_eq!(anonaddy.token, "");
+        assert_eq!(anonaddy.host, "https://app.anonaddy.com".to_string());
+    }
+
+    #[tokio::test]
+    async fn new_return_instance_if_token_variable_has_value() {
+        let client = reqwest::Client::new();
+        std::env::set_var("ANONADDY_TOKEN", "test-token");
+        std::env::remove_var("ANONADDY_HOST");
+
+        let anonaddy = AnonAddy::new(&client);
+
+        assert_eq!(anonaddy.client as *const _, &client as *const _);
+        assert_eq!(anonaddy.token, "test-token");
+        assert_eq!(anonaddy.host, "https://app.anonaddy.com".to_string());
+    }
+
+    #[tokio::test]
+    async fn new_return_instance_with_custom_host_if_provided() {
+        let client = reqwest::Client::new();
+        std::env::set_var("ANONADDY_TOKEN", "test-token");
+        std::env::set_var("ANONADDY_HOST", "https://my-anonaddy-instance.com");
+
+        let anonaddy = AnonAddy::new(&client);
+
+        assert_eq!(anonaddy.client as *const _, &client as *const _);
+        assert_eq!(anonaddy.token, "test-token");
+        assert_eq!(
+            anonaddy.host,
+            "https://my-anonaddy-instance.com".to_string()
+        );
+    }
 
     #[tokio::test]
     async fn get_aliases_returns_error_for_no_response() {
