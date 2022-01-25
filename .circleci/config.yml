@@ -3,18 +3,21 @@ jobs:
   test:
     docker:
       - image: rust:latest
+    resource_class: small
     steps:
       - checkout
       - run: cargo test
   build_linux:
     docker:
       - image: rust:latest
+    resource_class: small
     steps:
       - checkout
       - run: cargo build --release
   build_macosx:
     docker:
       - image: joseluisq/rust-linux-darwin-builder:latest
+    resource_class: small
     steps:
       - checkout
       - run: cargo build --release --target x86_64-apple-darwin
@@ -24,5 +27,9 @@ workflows:
   test_and_build:
     jobs:
       - test
-      - build_linux
-      - build_macosx
+      - build_linux:
+          requires:
+            - test
+      - build_macosx:
+          requires:
+            - test
