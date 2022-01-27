@@ -2,6 +2,9 @@
 name = "has-my-alias-been-pwned"
 version = "0.1.0"
 edition = "2021"
+license = "GPL-3.0"
+description = "A simple application to check email aliases against haveibeenpwned.com"
+repository = "https://github.com/gigaSproule/has-my-alias-been-pwned"
 
 [dependencies]
 async-trait = "0.1.52"

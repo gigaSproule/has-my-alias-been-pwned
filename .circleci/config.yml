@@ -1,4 +1,8 @@
 version: 2.1
+
+orbs:
+  github-cli: circleci/github-cli@2.0.0
+
 jobs:
   test:
     docker:
@@ -14,6 +18,11 @@ jobs:
     steps:
       - checkout
       - run: cargo build --release
+      - run: mv target/release/has-my-alias-been-pwned target/release/has-my-alias-been-pwned-linux
+      - persist_to_workspace:
+          root: target/release/
+          paths:
+            - anonaddy-hibp-linux
   build_macosx:
     docker:
       - image: joseluisq/rust-linux-darwin-builder:latest
@@ -21,6 +30,24 @@ jobs:
     steps:
       - checkout
       - run: cargo build --release --target x86_64-apple-darwin
+      - run: mv target/x86_64-apple-darwin/release/has-my-alias-been-pwned target/release/has-my-alias-been-pwned-mac
+      - persist_to_workspace:
+          root: target/release/
+          paths:
+            - has-my-alias-been-pwned-mac
+
+  upload_artifacts:
+    docker:
+      - image: circleci/base:stable
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - gh/install
+      - gh/setup
+      - run:
+          command: |
+            gh release upload $CIRCLE_TAG /tmp/workspace/has-my-alias-been-pwned-linux /tmp/workspace/has-my-alias-been-pwned-mac
 
 workflows:
   version: 2
@@ -33,3 +60,17 @@ workflows:
       - build_macosx:
           requires:
             - test
+      - gh/release:
+          context:
+            - GITHUB_CREDS
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+          files: traget/release/anonaddy-hibp
+          requires:
+            - build_linux
+            - build_macosx
+          tag: $CIRCLE_TAG
+          title: $CIRCLE_TAG
