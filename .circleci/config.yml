@@ -22,7 +22,7 @@ jobs:
       - persist_to_workspace:
           root: target/release/
           paths:
-            - anonaddy-hibp-linux
+            - has-my-alias-been-pwned-linux
   build_macosx:
     docker:
       - image: joseluisq/rust-linux-darwin-builder:latest
