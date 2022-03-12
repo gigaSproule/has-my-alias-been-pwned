@@ -11,20 +11,20 @@ pub struct Account {
     email_subject: String,
     banner_location: String,
     bandwidth: i16,
-    username_count: i8,
-    username_limit: i8,
+    username_count: i16,
+    username_limit: i16,
     default_recipient_id: String,
     default_alias_domain: String,
     default_alias_format: String,
     subscription: String,
-    subscription_ends_at: Option<i8>,
-    bandwidth_limit: i8,
-    recipient_count: i8,
-    recipient_limit: i8,
-    active_domain_count: i8,
-    active_domain_limit: i8,
-    active_shared_domain_alias_count: i8,
-    active_shared_domain_alias_limit: i8,
+    subscription_ends_at: Option<i16>,
+    bandwidth_limit: i16,
+    recipient_count: i16,
+    recipient_limit: i16,
+    active_domain_count: i16,
+    active_domain_limit: i16,
+    active_shared_domain_alias_count: i16,
+    active_shared_domain_alias_limit: i16,
     total_emails_forwarded: String,
     total_emails_blocked: String,
     total_emails_replied: String,
@@ -45,10 +45,10 @@ pub struct AnonAddyAlias {
     pub email: String,
     pub active: bool,
     pub description: Option<String>,
-    pub emails_forwarded: i8,
-    pub emails_blocked: i8,
-    pub emails_replied: i8,
-    pub emails_sent: i8,
+    pub emails_forwarded: i16,
+    pub emails_blocked: i16,
+    pub emails_replied: i16,
+    pub emails_sent: i16,
     pub recipients: Vec<String>,
     pub created_at: String,
     pub updated_at: String,
@@ -156,8 +156,9 @@ impl<'a> AliasService for AnonAddy<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use httpmock::prelude::*;
+
+    use super::*;
 
     #[tokio::test]
     #[should_panic(expected = "Please provide ANONADDY_TOKEN: NotPresent")]

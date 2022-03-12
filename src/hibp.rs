@@ -4,21 +4,36 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub struct Breach {
-    Name: String,
-    Title: String,
-    Domain: String,
-    BreachDate: String,
-    AddedDate: String,
-    ModifiedDate: String,
-    PwnCount: i32,
-    Description: String,
-    DataClasses: Vec<String>,
-    IsVerified: bool,
-    IsFabricated: bool,
-    IsSensitive: bool,
-    IsRetired: bool,
-    IsSpamList: bool,
-    LogoPath: String,
+    #[serde(rename = "Name")]
+    name: String,
+    #[serde(rename = "Title")]
+    title: String,
+    #[serde(rename = "Domain")]
+    domain: String,
+    #[serde(rename = "BreachDate")]
+    breach_date: String,
+    #[serde(rename = "AddedDate")]
+    added_date: String,
+    #[serde(rename = "ModifiedDate")]
+    modified_date: String,
+    #[serde(rename = "PwnCount")]
+    pwn_count: i32,
+    #[serde(rename = "Description")]
+    description: String,
+    #[serde(rename = "DataClasses")]
+    data_classes: Vec<String>,
+    #[serde(rename = "IsVerified")]
+    is_verified: bool,
+    #[serde(rename = "IsFabricated")]
+    is_fabricated: bool,
+    #[serde(rename = "IsSensitive")]
+    is_sensitive: bool,
+    #[serde(rename = "IsRetired")]
+    is_retired: bool,
+    #[serde(rename = "IsSpamList")]
+    is_spam_list: bool,
+    #[serde(rename = "LogoPath")]
+    logo_path: String,
 }
 
 pub struct HIBP<'a> {
@@ -65,7 +80,6 @@ impl<'a> HIBP<'a> {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct HIBPError {
     pub message: String,
 }
@@ -90,10 +104,13 @@ impl std::error::Error for HIBPError {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use httpmock::prelude::*;
+    use serial_test::serial;
+
+    use super::*;
 
     #[tokio::test]
+    #[serial]
     #[should_panic(expected = "Please provide HIBP_TOKEN: NotPresent")]
     async fn new_throw_error_if_token_variable_not_set() {
         let client = reqwest::Client::new();
@@ -102,6 +119,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn new_return_instance_if_token_variable_empty() {
         let client = reqwest::Client::new();
         std::env::set_var("HIBP_TOKEN", "");
@@ -114,6 +132,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn new_return_instance_if_token_variable_has_value() {
         let client = reqwest::Client::new();
         std::env::set_var("HIBP_TOKEN", "test-token");
@@ -126,6 +145,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn get_breaches_returns_error_for_no_response() {
         let client = reqwest::Client::new();
         let hibp = HIBP {
@@ -146,6 +166,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn get_breaches_returns_error_for_non_ok() {
         let server = MockServer::start();
         let breaches_mock = server.mock(|when, then| {
@@ -174,6 +195,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn get_breaches_returns_error_for_no_body() {
         let server = MockServer::start();
         let breaches_mock = server.mock(|when, then| {
@@ -202,6 +224,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn get_breaches_returns_multiple_breaches() {
         let server = MockServer::start();
         let breaches_mock = server.mock(|when, then| {
