@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let aliases = alias_service.get_aliases().await?;
     for alias in aliases {
         if alias.is_active() {
-            println!("{:#?}", alias);
+            println!("Checking breaches for {}", alias.get_id());
             let breaches = hibp.get_breaches().await?;
             if breaches.len() > 0 {
                 println!("{:#?}", breaches);
