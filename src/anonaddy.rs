@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use log::info;
 use serde::Deserialize;
 
 use crate::email_alias::{Alias, AliasError, AliasService};
@@ -59,8 +60,16 @@ impl Alias for AnonAddyAlias {
         self.active
     }
 
-    fn get_id(&self) -> String {
-        self.id.clone()
+    fn get_id(&self) -> &str {
+        self.id.as_ref()
+    }
+
+    fn get_email(&self) -> &str {
+        self.email.as_ref()
+    }
+
+    fn get_description(&self) -> Option<&str> {
+        self.description.as_deref()
     }
 }
 
@@ -109,7 +118,7 @@ impl<'a> AnonAddy<'a> {
 #[async_trait]
 impl<'a> AliasService for AnonAddy<'a> {
     async fn get_aliases(&self) -> Result<Vec<Box<dyn Alias>>, Box<dyn std::error::Error>> {
-        println!("Getting aliases from AnonAddy.");
+        info!("Getting aliases from AnonAddy.");
         let response = self
             .client
             .get(format!("{}/api/v1/aliases", &(self.host)))
@@ -131,12 +140,12 @@ impl<'a> AliasService for AnonAddy<'a> {
                 boxed_alias
             })
             .collect();
-        println!("Retrieved {} aliases.", boxed.len());
+        info!("Retrieved {} aliases.", boxed.len());
         Ok(boxed)
     }
 
-    async fn deactivate_alias(&self, id: String) -> Result<(), Box<dyn std::error::Error>> {
-        println!("Deactivating alias {}.", id);
+    async fn deactivate_alias(&self, id: &str) -> Result<(), Box<dyn std::error::Error>> {
+        info!("Deactivating alias {}.", id);
         let response = self
             .client
             .delete(format!("{}/api/v1/active-aliases/{}", &(self.host), id))
@@ -387,7 +396,7 @@ mod tests {
             host: "http://localhost".to_string(),
         };
 
-        let response = anonaddy.deactivate_alias(alias_id.to_string()).await;
+        let response = anonaddy.deactivate_alias(alias_id).await;
 
         assert!(response.is_err());
         let error = response.unwrap_err();
@@ -416,7 +425,7 @@ mod tests {
             host: server.url(""),
         };
 
-        let response = anonaddy.deactivate_alias(alias_id.to_string()).await;
+        let response = anonaddy.deactivate_alias(alias_id).await;
 
         assert!(response.is_err());
         let error = response.unwrap_err();
@@ -450,7 +459,7 @@ mod tests {
             host: server.url(""),
         };
 
-        let response = anonaddy.deactivate_alias(alias_id.to_string()).await;
+        let response = anonaddy.deactivate_alias(alias_id).await;
 
         assert!(response.is_ok());
 

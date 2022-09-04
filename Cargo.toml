@@ -9,10 +9,12 @@ repository = "https://github.com/gigaSproule/has-my-alias-been-pwned"
 [dependencies]
 async-trait = "0.1.52"
 dotenv = "0.15.0"
-reqwest = { version = "0.11.9", features = ["json"] }
-serde = { version = "1.0.135", features = ["derive"] }
-tokio = { version = "1.15.0", features = ["full"] }
+log = "0.4.17"
+log4rs = "1.1.1"
+reqwest = { version = "0.11.9", features = [ "json" ] }
+serde = { version = "1.0.135", features = [ "derive" ] }
+tokio = { version = "1.15.0", features = [ "full" ] }
 
 [dev-dependencies]
 httpmock = "0.6"
-serial_test = "0.6.0"
+serial_test = "0.9.0"

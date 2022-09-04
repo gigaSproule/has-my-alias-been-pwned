@@ -1,5 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, thread, time};
 
+use log::debug;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -62,16 +63,52 @@ impl<'a> HIBP<'a> {
         }
     }
 
-    pub async fn get_breaches(&self) -> Result<Vec<Breach>, Box<dyn std::error::Error>> {
+    pub async fn get_breaches(
+        &self,
+        email_address: &str,
+    ) -> Result<Vec<Breach>, Box<dyn std::error::Error>> {
+        let url = &format!(
+            "{}/api/v3/breachedaccount/{}?truncateResponse=false",
+            &(self.host),
+            email_address
+        );
         let response = self
             .client
-            .get(format!("{}/api/v3/breachedaccount/", &(self.host)))
+            .get(url)
             .header("hibp-api-key", &(self.token))
+            .header("user-agent", "has-my-alias-been-pwned")
             .send()
             .await?;
+        if response.status() == 404 {
+            return Ok(vec![]);
+        }
+        if response.status() == 429 {
+            let retry_after = response
+                .headers()
+                .get("retry-after")
+                .unwrap()
+                .to_str()?
+                .parse::<u64>()?;
+            let duration = time::Duration::from_secs(retry_after);
+            debug!("Need to wait {} seconds.", duration.as_secs());
+            thread::sleep(duration);
+            let response = self
+                .client
+                .get(url)
+                .header("hibp-api-key", &(self.token))
+                .header("user-agent", "has-my-alias-been-pwned")
+                .send()
+                .await?;
+            if response.status() == 404 {
+                return Ok(vec![]);
+            }
+            let breaches = response.json::<Vec<Breach>>().await?;
+            return Ok(breaches);
+        }
         if response.status() != 200 {
             return Err(Box::new(HIBPError::new(
                 "Failed to get breaches.".to_string(),
+                response.status().as_u16(),
             )));
         }
         let breaches = response.json::<Vec<Breach>>().await?;
@@ -82,17 +119,21 @@ impl<'a> HIBP<'a> {
 #[derive(Debug, Clone)]
 pub struct HIBPError {
     pub message: String,
+    pub status_code: u16,
 }
 
 impl HIBPError {
-    pub fn new(message: String) -> Self {
-        HIBPError { message }
+    pub fn new(message: String, status_code: u16) -> Self {
+        HIBPError {
+            message,
+            status_code,
+        }
     }
 }
 
 impl Display for HIBPError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
+        write!(f, "{} - {}", self.status_code, self.message)
     }
 }
 
@@ -154,7 +195,7 @@ mod tests {
             host: "http://localhost".to_string(),
         };
 
-        let response = hibp.get_breaches().await;
+        let response = hibp.get_breaches("email@email.com").await;
 
         assert!(response.is_err());
         let error = response.unwrap_err();
@@ -170,7 +211,11 @@ mod tests {
     async fn get_breaches_returns_error_for_non_ok() {
         let server = MockServer::start();
         let breaches_mock = server.mock(|when, then| {
-            when.method(GET).path("/api/v3/breachedaccount/");
+            when.method(GET)
+                .path("/api/v3/breachedaccount/email@email.com")
+                .query_param("truncateResponse", "false")
+                .header("hibp-api-key", "test-token")
+                .header("user-agent", "has-my-alias-been-pwned");
             then.status(400).header("content-type", "application/json");
         });
 
@@ -181,7 +226,7 @@ mod tests {
             host: server.url(""),
         };
 
-        let response = hibp.get_breaches().await;
+        let response = hibp.get_breaches("email@email.com").await;
 
         assert!(response.is_err());
         let error = response.unwrap_err();
@@ -199,7 +244,11 @@ mod tests {
     async fn get_breaches_returns_error_for_no_body() {
         let server = MockServer::start();
         let breaches_mock = server.mock(|when, then| {
-            when.method(GET).path("/api/v3/breachedaccount/");
+            when.method(GET)
+                .path("/api/v3/breachedaccount/email@email.com")
+                .query_param("truncateResponse", "false")
+                .header("hibp-api-key", "test-token")
+                .header("user-agent", "has-my-alias-been-pwned");
             then.status(200).header("content-type", "application/json");
         });
 
@@ -210,7 +259,7 @@ mod tests {
             host: server.url(""),
         };
 
-        let response = hibp.get_breaches().await;
+        let response = hibp.get_breaches("email@email.com").await;
 
         assert!(response.is_err());
         let error = response.unwrap_err();
@@ -229,7 +278,11 @@ mod tests {
         let server = MockServer::start();
         let breaches_mock = server.mock(|when, then| {
             let response = std::fs::read_to_string("resources/test/hibp_breaches.json");
-            when.method(GET).path("/api/v3/breachedaccount/");
+            when.method(GET)
+                .path("/api/v3/breachedaccount/email@email.com")
+                .query_param("truncateResponse", "false")
+                .header("hibp-api-key", "test-token")
+                .header("user-agent", "has-my-alias-been-pwned");
             then.status(200)
                 .header("content-type", "application/json")
                 .body(response.unwrap());
@@ -242,7 +295,7 @@ mod tests {
             host: server.url(""),
         };
 
-        let breaches = hibp.get_breaches().await;
+        let breaches = hibp.get_breaches("email@email.com").await;
 
         assert_eq!(breaches.unwrap().len(), 2);
 
