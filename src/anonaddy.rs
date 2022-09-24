@@ -106,7 +106,8 @@ impl<'a> AnonAddy<'a> {
     /// ```
     pub fn new(client: &'a reqwest::Client) -> Self {
         let token = std::env::var("ANONADDY_TOKEN").expect("Please provide ANONADDY_TOKEN");
-        let host = std::env::var("ANONADDY_HOST").unwrap_or("https://app.anonaddy.com".to_string());
+        let host = std::env::var("ANONADDY_HOST")
+            .unwrap_or_else(|_| "https://app.anonaddy.com".to_string());
         AnonAddy {
             client,
             token,

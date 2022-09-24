@@ -112,7 +112,7 @@ impl<'a> HIBP<'a> {
             )));
         }
         let breaches = response.json::<Vec<Breach>>().await?;
-        return Ok(breaches);
+        Ok(breaches)
     }
 }
 

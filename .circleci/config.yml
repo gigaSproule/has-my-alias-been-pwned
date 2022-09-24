@@ -4,6 +4,22 @@ orbs:
   gh: circleci/github-cli@2.0.0
 
 jobs:
+  semgrep-scan:
+    parameters:
+    environment:
+      # Scan changed files in PRs, block on new issues only (existing issues ignored)
+      # SEMGREP_BASELINE_REF: << parameters.diff_branch >>
+      SEMGREP_REPO_URL: << pipeline.project.git_url >>
+      SEMGREP_BRANCH: << pipeline.git.branch >>
+      # Change job timeout (default is 1800 seconds; set to 0 to disable)
+      # SEMGREP_TIMEOUT: 300
+    docker:
+      - image: returntocorp/semgrep
+    steps:
+      - checkout
+      - run:
+          name: "Semgrep scan"
+          command: semgrep ci
   test:
     docker:
       - image: rust:latest
@@ -53,6 +69,7 @@ workflows:
   version: 2
   test_and_build:
     jobs:
+      - semgrep-scan
       - test
       - build_linux:
           requires:

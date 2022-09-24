@@ -36,8 +36,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 alias.get_email(),
                 alias.get_description().unwrap_or("")
             );
-            let breaches = hibp.get_breaches(&alias.get_email()).await?;
-            if breaches.len() > 0 {
+            let breaches = hibp.get_breaches(alias.get_email()).await?;
+            if !breaches.is_empty() {
                 debug!("{:#?}", breaches);
                 warn!(
                     "{} breaches were found for {} - {}",
