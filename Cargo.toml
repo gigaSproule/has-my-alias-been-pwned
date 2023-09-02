@@ -7,7 +7,7 @@ description = "A simple application to check email aliases against haveibeenpwne
 repository = "https://github.com/gigaSproule/has-my-alias-been-pwned"
 
 [dependencies]
-async-trait = "0.1.52"
+async-trait = "0.1.73"
 dotenv = "0.15.0"
 log = "0.4.17"
 log4rs = "1.2.0"
