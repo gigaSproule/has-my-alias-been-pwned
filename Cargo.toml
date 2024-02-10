@@ -10,7 +10,7 @@ repository = "https://github.com/gigaSproule/has-my-alias-been-pwned"
 async-trait = "0.1.77"
 dotenv = "0.15.0"
 log = "0.4.20"
-log4rs = "1.2.0"
+log4rs = "1.3.0"
 reqwest = { version = "0.11.24", features = [ "json" ] }
 serde = { version = "1.0.196", features = [ "derive" ] }
 tokio = { version = "1.36.0", features = [ "full" ] }
