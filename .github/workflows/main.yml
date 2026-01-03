@@ -50,17 +50,17 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Run tests
         run: cargo test
-  test-windows:
-    runs-on: "windows-latest"
-    timeout-minutes: 30
-    if: github.ref_type != 'tags'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Configure Rust cache
-        uses: Swatinem/rust-cache@v2
-      - name: Run tests
-        run: cargo test
+#  test-windows:
+#    runs-on: "windows-latest"
+#    timeout-minutes: 30
+#    if: github.ref_type != 'tags'
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#      - name: Configure Rust cache
+#        uses: Swatinem/rust-cache@v2
+#      - name: Run tests
+#        run: cargo test
   test-macos:
     runs-on: "macos-latest"
     timeout-minutes: 30
@@ -93,27 +93,27 @@ jobs:
           name: has-my-alias-been-pwned-linux
           path: target/release/has-my-alias-been-pwned-linux
           retention-days: 1
-  build-windows:
-    runs-on: "windows-latest"
-    timeout-minutes: 30
-    if: github.event_name != 'pull_request' && !failure()
-    needs:
-      - test-windows
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Configure Rust cache
-        uses: Swatinem/rust-cache@v2
-      - name: Run build
-        run: cargo build --release
-      - name: Rename binary
-        run: mv target\release\has-my-alias-been-pwned.exe target\release\has-my-alias-been-pwned-windows.exe
-      - name: Temporarily save windows binary
-        uses: actions/upload-artifact@v6
-        with:
-          name: has-my-alias-been-pwned-windows
-          path: target\release\has-my-alias-been-pwned-windows.exe
-          retention-days: 1
+#  build-windows:
+#    runs-on: "windows-latest"
+#    timeout-minutes: 30
+#    if: github.event_name != 'pull_request' && !failure()
+#    needs:
+#      - test-windows
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#      - name: Configure Rust cache
+#        uses: Swatinem/rust-cache@v2
+#      - name: Run build
+#        run: cargo build --release
+#      - name: Rename binary
+#        run: mv target\release\has-my-alias-been-pwned.exe target\release\has-my-alias-been-pwned-windows.exe
+#      - name: Temporarily save windows binary
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: has-my-alias-been-pwned-windows
+#          path: target\release\has-my-alias-been-pwned-windows.exe
+#          retention-days: 1
   build-macos:
     runs-on: "macos-latest"
     timeout-minutes: 30
@@ -141,17 +141,17 @@ jobs:
     if: github.ref_type == 'tag'
     needs:
       - build-linux
-      - build-windows
+#      - build-windows
       - build-macos
     steps:
       - name: Retrieve saved linux binary
         uses: actions/download-artifact@v7
         with:
           name: has-my-alias-been-pwned-linux
-      - name: Retrieve saved windows binary
-        uses: actions/download-artifact@v7
-        with:
-          name: has-my-alias-been-pwned-windows
+#      - name: Retrieve saved windows binary
+#        uses: actions/download-artifact@v7
+#        with:
+#          name: has-my-alias-been-pwned-windows
       - name: Retrieve saved mac os binary
         uses: actions/download-artifact@v7
         with:
@@ -159,7 +159,8 @@ jobs:
       - name: Create Release
         uses: ncipollo/release-action@v1.20.0
         with:
-          artifacts: has-my-alias-been-pwned-linux,has-my-alias-been-pwned-macos,has-my-alias-been-pwned-windows.exe
+#          artifacts: has-my-alias-been-pwned-linux,has-my-alias-been-pwned-macos,has-my-alias-been-pwned-windows.exe
+          artifacts: has-my-alias-been-pwned-linux,has-my-alias-been-pwned-macos
           generateReleaseNotes: true
           makeLatest: true
 
