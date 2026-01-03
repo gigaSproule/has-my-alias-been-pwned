@@ -167,10 +167,12 @@ impl<'a> AliasService for AnonAddy<'a> {
 #[cfg(test)]
 mod tests {
     use httpmock::prelude::*;
+    use serial_test::serial;
 
     use super::*;
 
     #[tokio::test]
+    #[serial]
     #[should_panic(expected = "Please provide ANONADDY_TOKEN: NotPresent")]
     async fn new_throw_error_if_token_variable_not_set() {
         let client = reqwest::Client::new();
@@ -180,6 +182,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn new_return_instance_if_token_variable_empty() {
         let client = reqwest::Client::new();
         std::env::set_var("ANONADDY_TOKEN", "");
@@ -193,6 +196,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn new_return_instance_if_token_variable_has_value() {
         let client = reqwest::Client::new();
         std::env::set_var("ANONADDY_TOKEN", "test-token");
@@ -206,6 +210,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn new_return_instance_with_custom_host_if_provided() {
         let client = reqwest::Client::new();
         std::env::set_var("ANONADDY_TOKEN", "test-token");
