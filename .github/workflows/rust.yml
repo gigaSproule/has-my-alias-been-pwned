@@ -1,0 +1,43 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build_2025:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Check format
+        working-directory: "2025"
+        run: cargo fmt --check
+      - name: Check linting
+        working-directory: "2025"
+        run: cargo clippy -- -D warnings
+      - name: Build
+        working-directory: "2025"
+        run: cargo build --verbose
+      - name: Run tests
+        working-directory: "2025"
+        run: |
+          cargo install cargo-tarpaulin || true
+          cargo tarpaulin --engine llvm --fail-under 100 --exclude-files "*main.rs"
