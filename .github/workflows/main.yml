@@ -88,7 +88,7 @@ jobs:
       - name: Rename binary
         run: mv target/release/has-my-alias-been-pwned target/release/has-my-alias-been-pwned-linux
       - name: Temporarily save linux binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: has-my-alias-been-pwned-linux
           path: target/release/has-my-alias-been-pwned-linux
@@ -130,7 +130,7 @@ jobs:
       - name: Rename binary
         run: mv target/release/has-my-alias-been-pwned target/release/has-my-alias-been-pwned-macos
       - name: Temporarily save mac os binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: has-my-alias-been-pwned-macos
           path: target/release/has-my-alias-been-pwned-macos
@@ -145,7 +145,7 @@ jobs:
       - build-macos
     steps:
       - name: Retrieve saved linux binary
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: has-my-alias-been-pwned-linux
 #      - name: Retrieve saved windows binary
@@ -153,7 +153,7 @@ jobs:
 #        with:
 #          name: has-my-alias-been-pwned-windows
       - name: Retrieve saved mac os binary
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: has-my-alias-been-pwned-macos
       - name: Create Release
