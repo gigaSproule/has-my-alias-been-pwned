@@ -157,7 +157,7 @@ jobs:
         with:
           name: has-my-alias-been-pwned-macos
       - name: Create Release
-        uses: ncipollo/release-action@v1.20.0
+        uses: ncipollo/release-action@v1.21.0
         with:
 #          artifacts: has-my-alias-been-pwned-linux,has-my-alias-been-pwned-macos,has-my-alias-been-pwned-windows.exe
           artifacts: has-my-alias-been-pwned-linux,has-my-alias-been-pwned-macos
