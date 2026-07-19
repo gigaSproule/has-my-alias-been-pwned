@@ -23,9 +23,9 @@ jobs:
     if: github.ref_type != 'tags'
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Configure Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Run formatting check
         run: cargo fmt --all -- --check
   lint:
@@ -34,9 +34,9 @@ jobs:
     if: github.ref_type != 'tags'
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Configure Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Run lint
         run: cargo clippy --all-features --all-targets
   test-linux:
@@ -45,9 +45,9 @@ jobs:
     if: github.ref_type != 'tags'
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Configure Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Run tests
         run: cargo test
 #  test-windows:
@@ -67,9 +67,9 @@ jobs:
     if: github.ref_type != 'tags'
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Configure Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Run tests
         run: cargo test
   build-linux:
@@ -80,15 +80,15 @@ jobs:
       - test-linux
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Configure Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Run build
         run: cargo build --release
       - name: Rename binary
         run: mv target/release/has-my-alias-been-pwned target/release/has-my-alias-been-pwned-linux
       - name: Temporarily save linux binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: has-my-alias-been-pwned-linux
           path: target/release/has-my-alias-been-pwned-linux
@@ -122,15 +122,15 @@ jobs:
       - test-macos
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Configure Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Run build
         run: cargo build --release
       - name: Rename binary
         run: mv target/release/has-my-alias-been-pwned target/release/has-my-alias-been-pwned-macos
       - name: Temporarily save mac os binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: has-my-alias-been-pwned-macos
           path: target/release/has-my-alias-been-pwned-macos
@@ -145,7 +145,7 @@ jobs:
       - build-macos
     steps:
       - name: Retrieve saved linux binary
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: has-my-alias-been-pwned-linux
 #      - name: Retrieve saved windows binary
@@ -153,11 +153,11 @@ jobs:
 #        with:
 #          name: has-my-alias-been-pwned-windows
       - name: Retrieve saved mac os binary
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: has-my-alias-been-pwned-macos
       - name: Create Release
-        uses: ncipollo/release-action@v1.21.0
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         with:
 #          artifacts: has-my-alias-been-pwned-linux,has-my-alias-been-pwned-macos,has-my-alias-been-pwned-windows.exe
           artifacts: has-my-alias-been-pwned-linux,has-my-alias-been-pwned-macos
