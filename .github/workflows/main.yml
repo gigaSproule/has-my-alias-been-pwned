@@ -88,7 +88,7 @@ jobs:
       - name: Rename binary
         run: mv target/release/has-my-alias-been-pwned target/release/has-my-alias-been-pwned-linux
       - name: Temporarily save linux binary
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: has-my-alias-been-pwned-linux
           path: target/release/has-my-alias-been-pwned-linux
@@ -130,7 +130,7 @@ jobs:
       - name: Rename binary
         run: mv target/release/has-my-alias-been-pwned target/release/has-my-alias-been-pwned-macos
       - name: Temporarily save mac os binary
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: has-my-alias-been-pwned-macos
           path: target/release/has-my-alias-been-pwned-macos
